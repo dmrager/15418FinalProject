@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "layer_c.h"
+#include "mex_util.h"
 
 LayerConv::LayerConv() {
   type_ = "c";
@@ -138,6 +139,7 @@ void LayerConv::Forward(Layer *prev_layer, int passnum) {
 }
 
 void LayerConv::Backward(Layer *prev_layer) {
+  StartTimer();
   prev_layer->deriv_mat_.resize(prev_layer->batchsize_, prev_layer->length_);
   #if COMP_REGIME != 2
     std::vector< std::vector<Mat> > prev_deriv, filters, deriv;
@@ -166,6 +168,7 @@ void LayerConv::Backward(Layer *prev_layer) {
             prev_layer->mapsize_, filtersize_[0], padding_[0], !unshared_);        
   #endif
   prev_layer->deriv_mat_.Validate();
+  MeasureTime("Backwards Conv Layer");
 }
 
 void LayerConv::CalcWeights(Layer *prev_layer, int passnum) {

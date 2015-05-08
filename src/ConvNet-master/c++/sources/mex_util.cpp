@@ -18,21 +18,43 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "mex_util.h"
+#include <iostream> 
+#include <fstream> 
 
 static clock_t _start_timer_time = 0;
+static int timeLogCount = 0;
+static double convLayerTimeLog[50000];
 
 void StartTimer() {
-  if (print < 2) return;
+  //if (print < 2) return;
+  // double convLayerTimeLog[50000]; //set up timer array
+  //may eventually want to make this 2 col array to time forwards and backwards passes of layer_c
   _start_timer_time = std::clock();
 }
 
-void MeasureTime(std::string msg) {
-  if (print < 2) return;
+void  MeasureTime(std::string msg) {
+  //if (print < 2) return;
   clock_t t0 = _start_timer_time;
   clock_t t = std::clock();
   double d = double(t - t0);
   mexPrintMsg(msg, d);
+  convLayerTimeLog[timeLogCount]=d;
+  timeLogCount++;
 }
+
+void SaveTimeArray() {
+
+  std::ofstream timeLogFile;
+  timeLogFile.open("timeLogFile.txt");
+  for(int i=0; i<timeLogCount; i++){
+
+    timeLogFile << convLayerTimeLog[i] << std::endl;
+  }
+
+  timeLogFile.close();
+  
+}
+
 
 bool mexIsStruct(const mxArray *mx_array) {	
   mexAssert(mx_array != NULL && !mxIsEmpty(mx_array), "In 'mexIsStruct' the array is NULL or empty");

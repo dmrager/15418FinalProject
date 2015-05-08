@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "layer_n.h"
 #include "layer_s.h"
 #include "layer_f.h"
+#include "mex_util.h"
 
 Net::Net() {
   //mexAssert(kDefaultOrder == false, "kDefaultOrder should be false");  
@@ -100,8 +101,10 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
   
   size_t train_num = data_.size1();
   size_t numbatches = DIVUP(train_num, params_.batchsize_);
+  mexPrintMsg("Num Batches", numbatches);
   trainerrors_.resize(params_.epochs_, 2);
   trainerrors_.assign(0);
+  mexPrintMsg("Num Epochs", params_.epochs_);
   Mat data_batch, labels_batch, pred_batch;
   for (size_t epoch = 0; epoch < params_.epochs_; ++epoch) {
     ftype beta;
@@ -110,14 +113,14 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
     } else {
       beta = params_.beta_[epoch];
     }
-    //print = 1;
+    print = 2;
     if (params_.shuffle_) {
       Shuffle(data_, labels_);      
     }
-    StartTimer();
+    // StartTimer();
     //MatGPU::StartCudaTimer();
     size_t offset = 0;
-    for (size_t batch = 0; batch < numbatches; ++batch) {        
+    for (size_t batch = 0; batch < 10; ++batch) {        
       size_t batchsize = MIN(train_num - offset, params_.batchsize_);      
       UpdateWeights(epoch, false);
       data_batch.resize(batchsize, data_.size2());
@@ -126,10 +129,15 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
       SubSet(labels_, labels_batch, offset, true);
       ftype error1, error2;
       InitActiv(data_batch);
-      Forward(pred_batch, 1);            
+      // StartTimer();
+      Forward(pred_batch, 1);
+      // MeasureTime("forwardTime");            
       InitDeriv(labels_batch, error1);
       trainerrors_(epoch, 0) += error1;
+
+      // StartTimer();
       Backward();
+      // MeasureTime("Backward Time"); 
       InitDeriv2(error2);
       trainerrors_(epoch, 1) += error2;
       if (beta > 0) {
@@ -140,16 +148,18 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
       if (params_.verbose_ == 2) {
         mexPrintInt("Epoch", (int) epoch + 1);
         mexPrintInt("Batch", (int) batch + 1);
+	//mexPrintf("Backwards Time: %d\n", tBack);
       }
     } // batch       
     //MatGPU::MeasureCudaTime("totaltime");
-    MeasureTime("totaltime");
+    //MeasureTime("totaltime");
     if (params_.verbose_ == 1) {
       mexPrintInt("Epoch", (int) epoch + 1);
     }        
   } // epoch  
   trainerrors_ /= (ftype) numbatches;
-  //mexPrintMsg("Training finished");
+  SaveTimeArray();
+  mexPrintMsg("Training finished");
 }
 
 void Net::Classify(const mxArray *mx_data, mxArray *&mx_pred) {  

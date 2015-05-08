@@ -3,8 +3,8 @@ close all; clear mex;
 
 cd(fileparts(mfilename('fullpath')));
 
-funtype = 'gpu';
-%funtype = 'cpu';
+%funtype = 'gpu';
+funtype = 'cpu';
 %funtype = 'matlab';
 
 disp(funtype);
@@ -56,6 +56,7 @@ params.momentum = 0.9;
 params.lossfun = 'logreg';
 params.shuffle = 1;
 params.seed = 0;
+params.verbose = 2;
 dropout = 0;
 
 % norm_x = squeeze(mean(sqrt(sum(sum(train_x.^2))), kSampleDim));
@@ -80,7 +81,7 @@ layers = {
 };
 
 weights = single(genweights(layers, params, funtype));
-EpochNum = 10;
+EpochNum = 1; %was 10
 errors = zeros(EpochNum, 1);
 for i = 1 : EpochNum
   disp(['Epoch: ' num2str((i-1) * params.epochs + 1)])
